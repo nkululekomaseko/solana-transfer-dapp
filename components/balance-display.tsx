@@ -8,7 +8,6 @@ const BalanceDisplay = () => {
   const { publicKey } = useWallet();
 
   useEffect(() => {
-    console.log('....', publicKey);
     if (!connection || !publicKey) {
       return;
     }

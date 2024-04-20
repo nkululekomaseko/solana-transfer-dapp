@@ -16,6 +16,12 @@ import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { Loader2 } from 'lucide-react';
+import {
+  LAMPORTS_PER_SOL,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+} from '@solana/web3.js';
 
 const formSchema = z.object({
   transferAmount: z.coerce.number(),
@@ -27,7 +33,6 @@ type formSchemaType = z.infer<typeof formSchema>;
 export function TransferForm() {
   const [loading, setLoading] = useState(false);
   const [txSignature, setTxSignature] = useState('');
-  const [balance, setBalance] = useState(0);
   const { connection } = useConnection();
   const { publicKey, sendTransaction } = useWallet();
 
@@ -42,13 +47,39 @@ export function TransferForm() {
   const onSubmit = (values: formSchemaType) => {
     console.log(`Form values: ${JSON.stringify(values, null, 2)}`);
 
-    if (!connection) {
-      console.log('No connection');
+    const { transferAmount, transferToAddress } = values;
+
+    if (!connection || !publicKey) {
+      return;
     }
 
-    if (!publicKey) {
-      console.log('No public key');
-    }
+    const toPubkey = new PublicKey(transferToAddress);
+
+    console.log(`suppliedToPubkey: ${toPubkey}\nsenderPubKey: ${publicKey}`);
+
+    const transaction = new Transaction();
+
+    const LAMPORTS_TO_SEND = transferAmount * LAMPORTS_PER_SOL;
+
+    const sendSolInstruction = SystemProgram.transfer({
+      fromPubkey: publicKey,
+      toPubkey,
+      lamports: LAMPORTS_TO_SEND,
+    });
+
+    transaction.add(sendSolInstruction);
+    console.log(`Send sol transaction: ${JSON.stringify(sendSolInstruction)}`);
+
+    setLoading(true);
+    sendTransaction(transaction, connection)
+      .then((txSig) => {
+        setTxSignature(txSig);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.log(`Error transferring SOL`, error);
+        setLoading(false);
+      });
   };
 
   return (
@@ -87,6 +118,15 @@ export function TransferForm() {
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Send
         </Button>
+        {!!txSignature && (
+          <Button asChild>
+            <a
+              href={`https://explorer.solana.com/tx/${txSignature}?cluster=devnet`}
+            >
+              Transaction Link
+            </a>
+          </Button>
+        )}
       </form>
     </Form>
   );
