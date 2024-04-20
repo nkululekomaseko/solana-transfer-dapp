@@ -5,14 +5,17 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import {
   Form,
-  FormField,
-  FormLabel,
-  FormItem,
   FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useState } from 'react';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
   transferAmount: z.coerce.number(),
@@ -22,6 +25,12 @@ const formSchema = z.object({
 type formSchemaType = z.infer<typeof formSchema>;
 
 export function TransferForm() {
+  const [loading, setLoading] = useState(false);
+  const [txSignature, setTxSignature] = useState('');
+  const [balance, setBalance] = useState(0);
+  const { connection } = useConnection();
+  const { publicKey, sendTransaction } = useWallet();
+
   const form = useForm<formSchemaType>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -32,6 +41,14 @@ export function TransferForm() {
 
   const onSubmit = (values: formSchemaType) => {
     console.log(`Form values: ${JSON.stringify(values, null, 2)}`);
+
+    if (!connection) {
+      console.log('No connection');
+    }
+
+    if (!publicKey) {
+      console.log('No public key');
+    }
   };
 
   return (
@@ -66,7 +83,10 @@ export function TransferForm() {
             </FormItem>
           )}
         />
-        <Button type="submit">Send</Button>
+        <Button disabled={loading} type="submit">
+          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Send
+        </Button>
       </form>
     </Form>
   );
