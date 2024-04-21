@@ -3,6 +3,7 @@
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import {
   Form,
   FormControl,
@@ -23,10 +24,18 @@ import {
   Transaction,
 } from '@solana/web3.js';
 
-const formSchema = z.object({
-  transferAmount: z.coerce.number(),
-  transferToAddress: z.string().min(1, 'Must not be empty'),
-});
+const formSchema = z
+  .object({
+    transferAmount: z.coerce.number().min(1 / LAMPORTS_PER_SOL),
+    transferToAddress: z.string().min(1, 'Must not be empty'),
+  })
+  .refine(
+    async (data) => !!(await getValidSolanaAddress(data.transferToAddress)),
+    {
+      message: 'Invalid Solana Address',
+      path: ['transferToAddress'],
+    },
+  );
 
 type formSchemaType = z.infer<typeof formSchema>;
 
@@ -44,7 +53,7 @@ export function TransferForm() {
     },
   });
 
-  const onSubmit = (values: formSchemaType) => {
+  const onSubmit = async (values: formSchemaType) => {
     const { transferAmount, transferToAddress } = values;
 
     setTxSignature('');
@@ -53,7 +62,11 @@ export function TransferForm() {
       return;
     }
 
-    const toPubkey = new PublicKey(transferToAddress);
+    let toPubkey = await getValidSolanaAddress(transferToAddress);
+    if (!toPubkey) {
+      toast.warning('Invalid Solana Address');
+      return;
+    }
 
     console.log(`suppliedToPubkey: ${toPubkey}\nsenderPubKey: ${publicKey}`);
 
@@ -73,14 +86,20 @@ export function TransferForm() {
     setLoading(true);
     sendTransaction(transaction, connection)
       .then((txSig) => {
+        setLoading(false);
         setTxSignature(txSig);
-        setLoading(false);
+        toast.success('Transfer successful');
       })
-      .catch((error) => {
-        console.log(`Error transferring SOL`, error);
+      .catch((error: Error) => {
         setLoading(false);
+        console.log(`Error transferring SOL`, error.message);
+        toast.error(error.message);
       });
   };
+
+  if (!publicKey) {
+    return <p>Connect to a wallet</p>;
+  }
 
   return (
     <Form {...form}>
@@ -142,3 +161,18 @@ export function TransferForm() {
     </Form>
   );
 }
+
+const getValidSolanaAddress = async (
+  addr: string,
+): Promise<PublicKey | null> => {
+  let publicKey: PublicKey;
+  try {
+    publicKey = new PublicKey(addr);
+    if (PublicKey.isOnCurve(publicKey.toBytes())) {
+      return publicKey;
+    }
+    return null;
+  } catch (err) {
+    return null;
+  }
+};
