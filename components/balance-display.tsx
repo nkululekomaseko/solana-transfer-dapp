@@ -9,6 +9,7 @@ const BalanceDisplay = () => {
 
   useEffect(() => {
     if (!connection || !publicKey) {
+      setBalance(0);
       return;
     }
 

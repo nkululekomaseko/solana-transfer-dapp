@@ -1,16 +1,18 @@
-'use client';
-
 import Image from 'next/image';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import dynamic from 'next/dynamic';
 
 const MainNav = () => {
+  const WalletMultiButtonDynamic = dynamic(
+    async () =>
+      (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
+    { ssr: false },
+  );
+
   return (
-    <header className="sticky top-0 flex flex-col lg:flex-row md:flex-row sm:flex-row justify-between items-center h-16 w-full p-4  ">
-      <nav className="">
+    <header>
+      <nav className="sticky top-0 flex flex-col lg:flex-row md:flex-row sm:flex-row justify-between items-center h-16 w-full p-4  ">
         <Image src="/solanaLogo.png" width={200} height={20} alt="logo" />
-      </nav>
-      <nav className="">
-        <WalletMultiButton />
+        <WalletMultiButtonDynamic />
       </nav>
     </header>
   );

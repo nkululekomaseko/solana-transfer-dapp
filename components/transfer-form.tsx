@@ -45,9 +45,9 @@ export function TransferForm() {
   });
 
   const onSubmit = (values: formSchemaType) => {
-    console.log(`Form values: ${JSON.stringify(values, null, 2)}`);
-
     const { transferAmount, transferToAddress } = values;
+
+    setTxSignature('');
 
     if (!connection || !publicKey) {
       return;
@@ -86,7 +86,7 @@ export function TransferForm() {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-4 text-center flex flex-col"
+        className="w-full sm:w-4/5 md:w-3/5 xl:1/5 space-y-4 text-center flex flex-col"
       >
         <FormField
           control={form.control}
@@ -95,7 +95,12 @@ export function TransferForm() {
             <FormItem>
               <FormLabel>Amount (in SOL) to send:</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="amount in SOL" {...field} />
+                <Input
+                  className="text-center"
+                  type="number"
+                  placeholder="amount in SOL"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -108,25 +113,31 @@ export function TransferForm() {
             <FormItem>
               <FormLabel>Send SOL to Address:</FormLabel>
               <FormControl>
-                <Input placeholder="Address" {...field} />
+                <Input
+                  className="text-center"
+                  placeholder="Address"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button disabled={loading} type="submit">
-          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Send
-        </Button>
-        {!!txSignature && (
-          <Button asChild>
-            <a
-              href={`https://explorer.solana.com/tx/${txSignature}?cluster=devnet`}
-            >
-              Transaction Link
-            </a>
+        <div className="flex flex-col items-center space-y-4">
+          <Button className="w-1/2" disabled={loading} type="submit">
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Send
           </Button>
-        )}
+          {!!txSignature && (
+            <Button variant="link" asChild>
+              <a
+                href={`https://explorer.solana.com/tx/${txSignature}?cluster=devnet`}
+              >
+                Transaction Link
+              </a>
+            </Button>
+          )}
+        </div>
       </form>
     </Form>
   );
